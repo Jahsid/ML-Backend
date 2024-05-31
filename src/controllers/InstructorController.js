@@ -1,6 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose"
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import { Instructor } from "../models/instructorModel.js";
 import { EnrolledCourse } from "../models/enrolledCourse.js";
@@ -12,6 +15,29 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import s3 from "../../config/aws.config.js";
 import { videoDuration } from "@numairawan/video-duration";
 import { secondsToHMS } from "../utils/timeConverter.js";
+// import cloudinary from "../utils/cloudinary.js";
+
+import {v2 as cloudinary} from 'cloudinary';
+
+// const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({ 
+  cloud_name: 'jahsid', 
+  api_key: '562924453459611', 
+  api_secret: 'V0VRKI4iAumj8TB9uzO2Qic7mRg' 
+});
+
+// const cloudinary = require("../utils/cloudinary.js");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const ensureDirectoryExistence = (filePath) => {
+  const dirname = path.dirname(filePath);
+  if (fs.existsSync(dirname)) {
+    return true;
+  }
+  fs.mkdirSync(dirname, { recursive: true });
+};
 
 export const signup = async (req, res) => {
   try {
@@ -200,16 +226,24 @@ export const updateCourseImage = async (req, res) => {
     // const sanitizedFileName = encodeURIComponent(file.originalname)
     // const key = `courses/${sanitizedCourseName}/image/${sanitizedFileName}`;
 
-    const params = {
-      Bucket: "masterylinks",
-      Key: `courses/images/${Date.now()}.jpg`,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    };
-    const filePath = `https://${params.Bucket}.s3.${process.env.AWS_S3_REGION}.amazonaws.com/${params.Key}`;
+    // const params = {
+    //   Bucket: "masterylinks",
+    //   Key: `courses/images/${Date.now()}.jpg`,
+    //   Body: file.buffer,
+    //   ContentType: file.mimetype,
+    // };
+    // const filePath = `https://${params.Bucket}.s3.${process.env.AWS_S3_REGION}.amazonaws.com/${params.Key}`;
 
 
-    await s3.send(new PutObjectCommand(params));
+    // await s3.send(new PutObjectCommand(params));
+
+    // const imagePath = path.join(__dirname, '..', 'uploads', 'courses', 'images', `${Date.now()}_${file.originalname}`);
+    // ensureDirectoryExistence(imagePath);
+    // fs.writeFileSync(imagePath, file.buffer);
+
+    // const filePath = `/uploads/courses/images/${path.basename(imagePath)}`;
+    const imageResult = await cloudinary.uploader.upload(file.path, { folder: 'CourseImage' });
+    const filePath = imageResult.secure_url;
     console.log(filePath);
     const courses = await Course.findById(courseId);
     courses.set({
@@ -228,20 +262,46 @@ export const createModule = async (req, res) => {
   try {
     const { name, description, courseId } = req.body;
     const file = req.file;
-    const existingModule = await Course.findById(courseId);
 
-    const order = (existingModule?.modules?.length || 0) + 1;
-    const key = `courses/module/${name}/${file.originalname}`;
-    const params = {
-      Bucket: "masterylinks",
-      Key: key,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    };
-    const filePath = `https://${params.Bucket}.s3.${process.env.AWS_S3_REGION}.amazonaws.com/${params.Key}`;
-    await s3.send(new PutObjectCommand(params));
+    if (!file) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    // const existingModule = await Course.findById(courseId);
+
+    // const order = (existingModule?.modules?.length || 0) + 1;
+    // const key = `courses/module/${name}/${file.originalname}`;
+    // const params = {
+    //   Bucket: "masterylinks",
+    //   Key: key,
+    //   Body: file.buffer,
+    //   ContentType: file.mimetype,
+    // };
+    // const filePath = `https://${params.Bucket}.s3.${process.env.AWS_S3_REGION}.amazonaws.com/${params.Key}`;
+    // await s3.send(new PutObjectCommand(params));
+    // console.log(filePath);
+    // const { seconds } = await videoDuration(filePath);
+
+    const existingCourse = await Course.findById(courseId);
+
+    if (!existingCourse) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    const order = (existingCourse.modules?.length || 0) + 1;
+
+    // const modulePath = path.join(__dirname, '..', 'uploads', 'courses', 'modules', `${name}_${file.originalname}`);
+    // ensureDirectoryExistence(modulePath);
+    // fs.writeFileSync(modulePath, file.buffer);
+
+    // const filePath = `/uploads/courses/modules/${path.basename(modulePath)}`;
+
+    const videoResult = await cloudinary.uploader.upload(file.path, { folder: 'ModuleVideo' });
+    const filePath = videoResult.secure_url;
     console.log(filePath);
-    const { seconds } = await videoDuration(filePath);
+    // Assuming videoDuration and secondsToHMS are defined functions for processing the video file
+    const { seconds } = await videoDuration(modulePath);
+    
     const durationHMS = secondsToHMS(seconds);
 
     const moduleData = {
