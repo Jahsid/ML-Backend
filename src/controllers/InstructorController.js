@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose"
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// import mongoose from "mongoose"
+// import fs from 'fs';
+// import path from 'path';
+// import { fileURLToPath } from 'url';
 
 import { Instructor } from "../models/instructorModel.js";
 import { EnrolledCourse } from "../models/enrolledCourse.js";
@@ -11,33 +11,32 @@ import { Module } from "../models/moduleModel.js";
 import { sendEmail } from "../utils/nodeMailer.js";
 import { Otp } from "../models/otpModel.js";
 import { Course } from "../models/courseModel.js";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import s3 from "../../config/aws.config.js";
 import { videoDuration } from "@numairawan/video-duration";
 import { secondsToHMS } from "../utils/timeConverter.js";
-// import cloudinary from "../utils/cloudinary.js";
+// import { PutObjectCommand } from "@aws-sdk/client-s3";
+// import s3 from "../../config/aws.config.js";
 
 import {v2 as cloudinary} from 'cloudinary';
-
+// const cloudinary = require("../utils/cloudinary.js");
+// import cloudinary from "../utils/cloudinary.js";
 // const cloudinary = require('cloudinary').v2;
 
 cloudinary.config({ 
-  cloud_name: 'jahsid', 
-  api_key: '562924453459611', 
-  api_secret: 'V0VRKI4iAumj8TB9uzO2Qic7mRg' 
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET 
 });
 
-// const cloudinary = require("../utils/cloudinary.js");
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
-const ensureDirectoryExistence = (filePath) => {
-  const dirname = path.dirname(filePath);
-  if (fs.existsSync(dirname)) {
-    return true;
-  }
-  fs.mkdirSync(dirname, { recursive: true });
-};
+// const ensureDirectoryExistence = (filePath) => {
+//   const dirname = path.dirname(filePath);
+//   if (fs.existsSync(dirname)) {
+//     return true;
+//   }
+//   fs.mkdirSync(dirname, { recursive: true });
+// };
 
 export const signup = async (req, res) => {
   try {
@@ -296,11 +295,11 @@ export const createModule = async (req, res) => {
 
     // const filePath = `/uploads/courses/modules/${path.basename(modulePath)}`;
 
-    const videoResult = await cloudinary.uploader.upload(file.path, { folder: 'ModuleVideo' });
+    const videoResult = await cloudinary.uploader.upload(file.path, { resource_type: 'video' ,folder: 'ModuleVideo' });
     const filePath = videoResult.secure_url;
     console.log(filePath);
     // Assuming videoDuration and secondsToHMS are defined functions for processing the video file
-    const { seconds } = await videoDuration(modulePath);
+    const { seconds } = await videoDuration(filePath);
     
     const durationHMS = secondsToHMS(seconds);
 

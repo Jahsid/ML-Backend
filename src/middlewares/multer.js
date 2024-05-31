@@ -25,3 +25,22 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 export { upload };
+
+// import multer from "multer"
+
+// import { cloudinary } from '../utils/cloudinary.js';
+
+// const storage = new CloudinaryStorage({
+//   cloudinary: cloudinary,
+//   params: {
+//     folder: 'courses/modules',
+//     resource_type: 'video',
+//   },
+// });
+
+// const upload = multer({ 
+//   storage: storage,
+//   limits: { fileSize: 50 * 1024 * 1024 },
+// })
+
+// export { upload }
